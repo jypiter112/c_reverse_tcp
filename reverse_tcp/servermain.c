@@ -7,9 +7,12 @@
 int main(int argc, char** argv) {
     WSADATA wsaData;
     struct sockaddr_in addr;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
-    printf("WsaStartup done.\n");
-
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        printf("WSAStartup failed: %d", WSAGetLastError());
+    }
+    else {
+        printf("WsaStartup done.\n");
+    }
     // Create socket
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
@@ -20,10 +23,10 @@ int main(int argc, char** argv) {
     // Try bind
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY); // Bind to all interfaces
+    addr.sin_addr.s_addr = htonl(INADDR_ANY); // bind to 0.0.0.0
     addr.sin_port = htons(8080);
 
-    if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR) {
+    if (bind(sock, &addr, sizeof(addr)) == SOCKET_ERROR) {
         printf("Bind failed: %d\n", WSAGetLastError());
         closesocket(sock);
         WSACleanup();
@@ -38,7 +41,7 @@ int main(int argc, char** argv) {
         WSACleanup();
         return 1;
     }
-    printf("Listening...\n");
+    printf("Listening for connections...");
 
     // Accept a client connection
     SOCKET client = accept(sock, NULL, NULL);
@@ -51,11 +54,11 @@ int main(int argc, char** argv) {
     printf("Client accepted.\n");
 
     // Receive data
-    char request[256] = { 0 };
+    char request[1024] = { 0 };
     int recvResult = recv(client, request, sizeof(request) - 1, 0);
     if (recvResult > 0) {
-        request[recvResult] = '\0'; // Null-terminate the received string
-        printf("Receiving data: %s\n", request);
+        request[recvResult] = '\0'; // Null terminate
+        printf("Receiving data: \n%s\n", request);
     }
     else {
         printf("Receive failed: %d\n", WSAGetLastError());
